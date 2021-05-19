@@ -1294,7 +1294,7 @@ void drawCoordinateSystem() {
 // pillar
 float pillarBodyWidth = 0.2;
 float pillarBodyLength = 0.6;
-float pillarBodyHeight = 3.5;
+float pillarBodyHeight = 3.8;
 RectangularPrism pillarBody = RectangularPrism(pillarBodyWidth, pillarBodyLength, pillarBodyHeight);
 
 float pillarBottomWidth = 1.5*pillarBodyLength;
@@ -1303,7 +1303,7 @@ float pillarBottomHeight = pillarBodyWidth;
 RectangularPrism pillarBottom = RectangularPrism(pillarBottomWidth, pillarBottomLength, pillarBottomHeight);
 
 float pillarTopWidth = pillarBodyWidth;
-float pillarTopLength = pillarBottomLength;
+float pillarTopLength = 1.1*pillarBottomLength;
 float pillarTopHeight = 2*pillarBodyLength;
 RectangularPrism pillarTop = RectangularPrism(pillarTopWidth, pillarTopLength, pillarTopHeight);
 
@@ -1322,7 +1322,7 @@ Crank crank = Crank(crankWidth, crankHeight, crankLength, crankSegments);
 
 // bearing
 float bearingBottomWidth = pillarBodyWidth;
-float bearingBottomHeight= bearingBottomWidth;
+float bearingBottomHeight= rotationHeight + crankHeight;
 float bearingBottomLength = 0.8*pillarTopHeight;
 float bearingBodyLength = 0.6*bearingBottomLength;
 float bearingBodyHeight = 4*bearingBottomHeight;
@@ -1354,7 +1354,7 @@ Nut nut = Nut(nutSize, nutHeight, nutRadius, nutSegments);
 float linkbarLength = pillarBodyHeight;
 float linkbarWidth = 3*crankWidth;
 float linkbarHeight = crankHeight;
-float linkbarSlotLength = 0.5*linkbarLength;
+float linkbarSlotLength = 0.55*linkbarLength;
 float linkBarSlotShift = 0.1*linkbarSlotLength;
 float linkbarSlotWidth = crankWidth;
 int linkbarSegments = 50;
@@ -1380,6 +1380,8 @@ void initObjects() {
     bolt.init();
 }
 
+bool drawWireFrame = false;
+
 // fixed
 void drawPillarBody() {
     glPushMatrix();
@@ -1389,7 +1391,8 @@ void drawPillarBody() {
 
     pillarBody.setColor(ColorArr[1]);
     pillarBody.DrawWireframe();
-    pillarBody.DrawColor();
+    if(!drawWireFrame)
+        pillarBody.DrawColor();
 
     glPopMatrix();
 }
@@ -1403,7 +1406,8 @@ void drawPillarBottom() {
 
     pillarBottom.setColor(ColorArr[0]);
     pillarBottom.DrawWireframe();
-    pillarBottom.DrawColor();
+    if(!drawWireFrame)
+        pillarBottom.DrawColor();
 
     glPopMatrix();
 }
@@ -1417,7 +1421,8 @@ void drawPillarTop() {
 
     pillarTop.setColor(ColorArr[2]);
     pillarTop.DrawWireframe();
-    pillarTop.DrawColor();
+    if(!drawWireFrame)
+        pillarTop.DrawColor();
 
     glPopMatrix();
 }
@@ -1433,7 +1438,8 @@ void drawRotation() {
 
     rotation.setColor(ColorArr[3]);
     rotation.DrawWireframe();
-    rotation.DrawColor();
+    if(!drawWireFrame)
+        rotation.DrawColor();
 
     glPopMatrix();
 } 
@@ -1452,7 +1458,8 @@ void drawCrank() {
 
     crank.setColor(ColorArr[4]);
     crank.DrawWireframe();
-    crank.DrawColor();
+    if(!drawWireFrame)
+        crank.DrawColor();
 
     glPopMatrix();
 }
@@ -1469,7 +1476,8 @@ void drawBearing() {
 
     bearing.setColor(ColorArr[0]);
     bearing.DrawWireframe();
-    bearing.DrawColor();
+    if(!drawWireFrame)
+        bearing.DrawColor();
 
     glPopMatrix();
 
@@ -1484,37 +1492,8 @@ void drawBearing() {
 
     bearing.setColor(ColorArr[0]);
     bearing.DrawWireframe();
-    bearing.DrawColor();
-
-    glPopMatrix();
-}
-
-void drawSlider() {
-    glPushMatrix();
-
-    glMatrixMode(GL_MODELVIEW);
-    glTranslatef(0, pillarBottom.height + pillarBody.height + pillarTop.height/2, pillarTop.width/2 + bearing.bottomHeight + bearing.bodyHeight - bearing.bodyLength/2);
-    glRotatef(90, 0, 0, 1);
-    glTranslatef(0, -slider.height/2, 0);
-
-    slider.setColor(ColorArr[7]);
-    slider.DrawWireframe();
-    slider.DrawColor();
-
-    glPopMatrix();
-}
-
-void drawUBar() {
-    glPushMatrix();
-
-    glMatrixMode(GL_MODELVIEW);
-    glTranslatef(0, pillarBottom.height + pillarBody.height + pillarTop.height/2 - slider.radius, pillarTop.width/2 + bearing.bottomHeight + bearing.bodyHeight - bearing.bodyLength/2);
-    glRotatef(180, 1, 0, 0);
-    glTranslatef(0, 0, -ubar.width/2);
-
-    ubar.setColor(ColorArr[6]);
-    ubar.DrawWireframe();
-    ubar.DrawColor();
+    if(!drawWireFrame)
+        bearing.DrawColor();
 
     glPopMatrix();
 }
@@ -1530,7 +1509,8 @@ void drawThirdBolt() {
 
     bolt.setColor(ColorArr[7]);
     bolt.DrawWireframe();
-    bolt.DrawColor();
+    if(!drawWireFrame)
+        bolt.DrawColor();
 
     glPopMatrix();
 }
@@ -1547,7 +1527,8 @@ void drawSecondBolt() {
 
     bolt.setColor(ColorArr[7]);
     bolt.DrawWireframe();
-    bolt.DrawColor();
+    if(!drawWireFrame)
+        bolt.DrawColor();
 
     glPopMatrix();
 }
@@ -1571,7 +1552,8 @@ void drawSecondNut() {
 
     nut.setColor(ColorArr[0]);
     nut.DrawWireframe();
-    nut.DrawColor();
+    if(!drawWireFrame)
+        nut.DrawColor();
 
     glPopMatrix();
 }
@@ -1592,9 +1574,101 @@ void drawLinkBar() {
     glRotatef(-90, 0, 0, 1);
     glTranslatef(-linkbar.length/2 + linkbar.width/2, 0, 0);
 
-    linkbar.setColor(ColorArr[11]);
+    linkbar.setColor(ColorArr[5]);
     linkbar.DrawWireframe();
-    linkbar.DrawColor();
+    if(!drawWireFrame)
+        linkbar.DrawColor();
+
+    glPopMatrix();
+}
+
+void drawFirstBolt() {
+    float d = 0.5*pillarBody.height - 0.1*pillarBody.height;
+    float r = secondBoltPos * (crank.length - crank.width);
+    float temp1 = r*sin((90 + rotateAngle) * PI / 180.0);
+    float temp2 = r*cos((90 + rotateAngle) * PI / 180) + d;
+    float thirdBoltAngle = atan(temp1 / temp2) * 180 / PI;
+
+    glPushMatrix();
+
+    glMatrixMode(GL_MODELVIEW);
+    glTranslatef(0, pillarBottom.height + 0.1*pillarBody.height, pillarBody.width/2 + rotation.height + crank.height + linkbar.height);
+    glRotatef(thirdBoltAngle, 0, 0, 1);
+    glTranslatef(0, linkbar.length - linkbar.width, 0);
+    glRotatef(90, 1, 0, 0);
+
+
+    bolt.setColor(ColorArr[7]);
+    bolt.DrawWireframe();
+    if(!drawWireFrame)
+        bolt.DrawColor();
+
+    glPopMatrix();
+}
+
+void drawFirstNut() {
+    float d = 0.5*pillarBody.height - 0.1*pillarBody.height;
+    float r = secondBoltPos * (crank.length - crank.width);
+    float temp1 = r*sin((90 + rotateAngle) * PI / 180.0);
+    float temp2 = r*cos((90 + rotateAngle) * PI / 180) + d;
+    float thirdBoltAngle = atan(temp1 / temp2) * 180 / PI;
+
+    glPushMatrix();
+
+    glMatrixMode(GL_MODELVIEW);
+    glTranslatef(0, pillarBottom.height + 0.1*pillarBody.height, pillarBody.width/2 + rotation.height + crank.height + linkbar.height);
+    glRotatef(thirdBoltAngle, 0, 0, 1); // rotate around third bolt
+    glTranslatef(0, linkbar.length - linkbar.width, 0);
+    glRotatef(-thirdBoltAngle, 0, 0, 1); // rotate around origin -> no rotate after glRotatef(thirdBoltAngle, 0, 0, 1);
+
+    nut.setColor(ColorArr[0]);
+    nut.DrawWireframe();
+    if(!drawWireFrame)
+        nut.DrawColor();
+
+    glPopMatrix();
+}
+
+void drawSlider() {
+    float d = 0.5*pillarBody.height - 0.1*pillarBody.height;
+    float r = secondBoltPos * (crank.length - crank.width);
+    float temp1 = r*sin((90 + rotateAngle) * PI / 180.0);
+    float temp2 = r*cos((90 + rotateAngle) * PI / 180) + d;
+    float thirdBoltAngle = atan(temp1 / temp2) * 180 / PI;
+
+    glPushMatrix();
+
+    glMatrixMode(GL_MODELVIEW);
+    glTranslatef((linkbar.length - linkbar.width)*sin(-thirdBoltAngle * PI / 180), pillarBottom.height + pillarBody.height + pillarTop.height/2, pillarTop.width/2 + bearing.bottomHeight + bearing.bodyHeight - bearing.bodyLength/2);
+    glRotatef(90, 0, 0, 1);
+    glTranslatef(0, -slider.height/2, 0);
+
+    slider.setColor(ColorArr[7]);
+    slider.DrawWireframe();
+    if(!drawWireFrame)
+        slider.DrawColor();
+
+    glPopMatrix();
+}
+
+void drawUBar() {
+    float d = 0.5*pillarBody.height - 0.1*pillarBody.height;
+    float r = secondBoltPos * (crank.length - crank.width);
+    float temp1 = r*sin((90 + rotateAngle) * PI / 180.0);
+    float temp2 = r*cos((90 + rotateAngle) * PI / 180) + d;
+    float thirdBoltAngle = atan(temp1 / temp2) * 180 / PI;
+
+    glPushMatrix();
+
+    glMatrixMode(GL_MODELVIEW);
+    glTranslatef((linkbar.length - linkbar.width)*sin(-thirdBoltAngle * PI / 180), pillarBottom.height + pillarBody.height + pillarTop.height/2 - slider.radius, pillarTop.width/2 + bearing.bottomHeight + bearing.bodyHeight - bearing.bodyLength/2);
+    glRotatef(180, 1, 0, 0);
+    glTranslatef(0, 0, -ubar.width/2);
+
+    ubar.setColor(ColorArr[6]);
+    ubar.DrawWireframe();
+    if(!drawWireFrame)
+        ubar.DrawColor();
 
     glPopMatrix();
 }
@@ -1612,12 +1686,17 @@ void drawObjects() {
     drawSecondBolt();
     drawSecondNut();
     drawLinkBar();
+    drawFirstBolt();
+    drawFirstNut();
 }
 
+float cameraAngle = -25;
+float cameraHeight = 4;
+float cameraDistance = 10;
 void display() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(0, 0, 6.5, 0, 0, 0, 0, 1, 0);
+    gluLookAt(cameraDistance*sin(cameraAngle * PI / 180), cameraHeight, cameraDistance*cos(cameraAngle * PI / 180), 0, 0, 0, 0, 1, 0);
     //    gluLookAt(0, 0, 4, 0, 0, 0, 0, 1, 0);
 
 
@@ -1649,6 +1728,40 @@ void keyPressed(unsigned char key, int x, int y) {
         secondBoltPos = secondBoltPos + 0.1;
         if(secondBoltPos > 1) secondBoltPos = 1; 
         break;
+    case '+':
+        cameraDistance -= 0.1;
+        break;
+    case '-':
+        cameraDistance += 0.1;
+        break;
+    case 'w':
+        drawWireFrame = !drawWireFrame;
+        break;
+    case 'W':
+        drawWireFrame = !drawWireFrame;
+        break;
+    default:
+        break;
+    }
+    glutPostRedisplay();
+}
+
+
+void specialKeyPressed(int key, int x, int y) {
+    switch (key)
+    {
+    case GLUT_KEY_UP:
+        cameraHeight += 0.1;
+        break;
+    case GLUT_KEY_DOWN:
+        cameraHeight -= 0.1;
+        break;    
+    case GLUT_KEY_LEFT:
+        cameraAngle += 10;
+        break;
+    case GLUT_KEY_RIGHT:
+        cameraAngle -= 10;
+        break;  
     default:
         break;
     }
@@ -1667,7 +1780,10 @@ void init()
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(-0.5*size, 0.5*size, -0.5*size, 0.5*size, -1000, 1000);
+    // glOrtho(-0.5*size, 0.5*size, -0.5*size, 0.5*size, -1000, 1000);
+    float x = 2;
+    // glFrustum(-x, x, -0.5*x, x, x, 20);
+    glFrustum(-1.0, 1.0, -1.0, 1.0, 1, 50.0);
     
     
     
@@ -1689,6 +1805,7 @@ int main(int argc, char** argv) {
 
     glutDisplayFunc(display);
     glutKeyboardFunc(keyPressed);
+    glutSpecialFunc(specialKeyPressed);
       
     glutMainLoop();
     return 0;
