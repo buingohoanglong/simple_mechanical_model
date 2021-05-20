@@ -31,11 +31,22 @@ public:
 
 const int COLORNUM = 14;
 
-Color ColorArr[COLORNUM] = {Color(1.0, 0.0, 0.0), Color(0.0, 1.0, 0.0), Color(0.0,  0.0, 1.0),
-                            Color(1.0, 1.0,  0.0), Color(1.0, 0.0, 1.0), Color(0.0, 1.0, 1.0),
-                            Color(0.3, 0.3, 0.3), Color(0.5, 0.5, 0.5), Color(0.9,  0.9, 0.9),
-                            Color(1.0, 0.5,  0.5), Color(0.5, 1.0, 0.5), Color(0.5, 0.5, 1.0),
-                            Color(0.0, 0.0, 0.0), Color(1.0, 1.0, 1.0)};
+Color ColorArr[COLORNUM] = {
+    Color(1.0, 0.0, 0.0), // red
+    Color(0.0, 1.0, 0.0), // green
+    Color(0.0,  0.0, 1.0),// blue
+    Color(1.0, 1.0,  0.0),// 
+    Color(1.0, 0.0, 1.0),
+    Color(0.0, 1.0, 1.0),
+    Color(0.3, 0.3, 0.3),
+    Color(0.5, 0.5, 0.5),
+    Color(0.9,  0.9, 0.9),
+    Color(1.0, 0.5,  0.5), 
+    Color(0.5, 1.0, 0.5), 
+    Color(0.5, 0.5, 1.0),
+    Color(0.0, 0.0, 0.0), 
+    Color(1.0, 1.0, 1.0)
+};
 
 class Point3f {
 public:
@@ -127,9 +138,12 @@ class Face {
 public:
 	int	nVerts;
 	VertexID* vert;
+    Vector3f facenorm;
+
 	Face() {
 		nVerts	= 0;
 		vert	= NULL;
+        facenorm = Vector3f();
 	}
 
 	~Face() {
@@ -149,6 +163,11 @@ public:
 	int	numFaces;
 	Face* face;
     Color color = Color(0,0,0);
+	GLfloat ambient[4] = {0.2, 0.2, 0.2, 1.0};
+	GLfloat diffuse[4] = {0.8, 0.8, 0.8, 0.0};
+	GLfloat specular[4] = {1.0, 1.0, 1.0, 0.0};
+	GLfloat shiness = 50.0f;
+
 public:
 	Mesh() {
 		numVerts	= 0;
@@ -202,6 +221,64 @@ public:
 
     void setColor(Color color) {
         this->color = color;
+    }
+
+    void Draw() {
+        // set material
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, this->ambient);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, this->diffuse);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, this->specular);
+        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, this->shiness);
+
+        // draw
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        for (int f = 0; f < numFaces; f++){
+            glBegin(GL_POLYGON);
+            for (int v = 0; v < face[f].nVerts; v++){
+                int	iv = face[f].vert[v].vertIndex;
+                glNormal3f(face[f].facenorm.x, face[f].facenorm.y, face[f].facenorm.z); // use face norm
+                glVertex3f(pt[iv].x, pt[iv].y, pt[iv].z);
+            }
+            glEnd();
+        }
+    }
+
+    void setupMaterial(Color color) {
+        float newcolor[4];
+        newcolor[0] = color.red;
+        newcolor[1] = color.green;
+        newcolor[2] = color.blue;
+        newcolor[3] = 1.0;
+
+        if(ambient != NULL) {
+            for(int i=0; i<4; i++) this->ambient[i] = newcolor[i];
+        }
+        if(diffuse != NULL) {
+            for(int i=0; i<4; i++) this->diffuse[i] = newcolor[i];
+        }
+        // if(diffuse != NULL) {
+        //     for(int i=0; i<4; i++) this->specular[i] = specular[i];
+        // }
+        // this->shiness = shiness;
+    }
+
+    // only call after init vertices and faces
+    // calculate face norms using Newell's method
+    void CalculateFacesNorm() {
+        for(int f=0; f<numFaces; f++) {
+            float mx = 0;
+            float my = 0;
+            float mz = 0;
+            for(int i=0; i<face[f].nVerts; i++) {
+                int vertexIndex = face[f].vert[i].vertIndex;
+                int vertexIndexNext = face[f].vert[(i+1) % face[f].nVerts].vertIndex;
+                mx += (pt[vertexIndex].y - pt[vertexIndexNext].y) * (pt[vertexIndex].z + pt[vertexIndexNext].z);
+                my += (pt[vertexIndex].z - pt[vertexIndexNext].z) * (pt[vertexIndex].x + pt[vertexIndexNext].x);
+                mz += (pt[vertexIndex].x - pt[vertexIndexNext].x) * (pt[vertexIndex].y + pt[vertexIndexNext].y);
+            }
+            face[f].facenorm.set(mx, my, mz);
+            face[f].facenorm.normalize();
+        }
     }
 
     virtual void init() = 0;
@@ -275,6 +352,7 @@ public:
         face[5].vert[2].vertIndex = 3;
         face[5].vert[3].vertIndex = 7;
             
+        CalculateFacesNorm();
     }
 };
 
@@ -332,6 +410,8 @@ public:
             face[i + 2*nSegments].vert[2].vertIndex = (i+1) % nSegments + 2 + nSegments;   
             face[i + 2*nSegments].vert[3].vertIndex = (i+1) % nSegments + 2;     
         }
+
+        CalculateFacesNorm();
             
     }
 };
@@ -460,6 +540,8 @@ public:
             face[i + 5*nSegments].vert[2].vertIndex = (i+1)  + 3*(nSegments+1);   
             face[i + 5*nSegments].vert[3].vertIndex = (i+1)  + 2*(nSegments+1);  
         }
+
+        CalculateFacesNorm();
 
     }
 };
@@ -696,6 +778,9 @@ public:
             }
            
         }
+
+
+        CalculateFacesNorm();
     }
 };
 
@@ -837,6 +922,9 @@ public:
         face[13].vert[1].vertIndex = 13;
         face[13].vert[2].vertIndex = 14;
         face[13].vert[3].vertIndex = 6; 
+
+
+        CalculateFacesNorm();
     }
 };
 
@@ -1009,6 +1097,8 @@ public:
                 face[i + 2*nSegments].vert[3].vertIndex = isLast ? numVerts - 14 : (i+1) % nSegments + 3*nSegments;              
             }
         }
+
+        CalculateFacesNorm();
     }
 };
 
@@ -1264,6 +1354,9 @@ public:
             face[i+5*nSegments].vert[2].vertIndex = i + 3*nSegments; 
             face[i+5*nSegments].vert[3].vertIndex = (i == nSegments-1) ? numVerts-21 : i+1 + 3*nSegments;
         }
+
+
+        CalculateFacesNorm();
     }
 };
 
@@ -1310,14 +1403,14 @@ RectangularPrism pillarTop = RectangularPrism(pillarTopWidth, pillarTopLength, p
 // rotation
 float rotationRadius = 1.2*pillarBodyLength;
 float rotationHeight = pillarBodyWidth;
-float rotationSegments = 50;
+float rotationSegments = 100;
 Cylinder rotation = Cylinder(rotationRadius, rotationHeight, rotationSegments);
 
 // crank
 float crankWidth = 0.2;
 float crankHeight = rotationHeight;
 float crankLength = rotationRadius + crankWidth / 2;
-float crankSegments = 25;
+float crankSegments = 50;
 Crank crank = Crank(crankWidth, crankHeight, crankLength, crankSegments);
 
 // bearing
@@ -1327,14 +1420,14 @@ float bearingBottomLength = 0.8*pillarTopHeight;
 float bearingBodyLength = 0.6*bearingBottomLength;
 float bearingBodyHeight = 4*bearingBottomHeight;
 float bearingRadius = bearingBodyLength / 3;
-int bearingSegments = 50;
+int bearingSegments = 100;
 Bearing bearing = Bearing(bearingBottomWidth, bearingBottomHeight, bearingBottomLength,
     bearingBodyLength, bearingBodyLength, bearingRadius, bearingSegments);
 
 // cylinder
 float sliderRadius = bearingRadius;
 float sliderHeight = 2*pillarTop.length;
-float sliderSegments = 50;
+float sliderSegments = 100;
 Cylinder slider = Cylinder(sliderRadius, sliderHeight, sliderSegments);
 
 // ubar
@@ -1347,7 +1440,7 @@ UBar ubar = UBar(ubarWidth, ubarHeight, ubarLength);
 float nutSize = ubarWidth;
 float nutRadius = 0.6*nutSize/2;
 float nutHeight = ubarWidth;
-int nutSegments = 50;
+int nutSegments = 100;
 Nut nut = Nut(nutSize, nutHeight, nutRadius, nutSegments);
 
 // linkbar
@@ -1357,13 +1450,13 @@ float linkbarHeight = crankHeight;
 float linkbarSlotLength = 0.55*linkbarLength;
 float linkBarSlotShift = 0.1*linkbarSlotLength;
 float linkbarSlotWidth = crankWidth;
-int linkbarSegments = 50;
+int linkbarSegments = 100;
 LinkBar linkbar = LinkBar(linkbarLength, linkbarWidth, linkbarHeight, linkbarSlotLength, linkBarSlotShift, linkbarSlotWidth, linkbarSegments);
 
 // bolt
 float boltRadius = nutRadius;
 float boltHeight = nutHeight;
-float boltSegments = 50;
+float boltSegments = 100;
 Cylinder bolt = Cylinder(boltRadius, boltHeight, boltSegments);
 
 void initObjects() {
@@ -1389,10 +1482,15 @@ void drawPillarBody() {
     glMatrixMode(GL_MODELVIEW);
     glTranslatef(-pillarBody.length / 2, pillarBottomHeight, -pillarBody.width / 2);
 
-    pillarBody.setColor(ColorArr[1]);
-    pillarBody.DrawWireframe();
-    if(!drawWireFrame)
-        pillarBody.DrawColor();
+
+    if(!drawWireFrame) {
+        pillarBody.setupMaterial(ColorArr[2]);
+        pillarBody.Draw();
+    } else {
+        pillarBody.setColor(ColorArr[2]);
+        pillarBody.DrawWireframe();
+    }
+
 
     glPopMatrix();
 }
@@ -1404,10 +1502,14 @@ void drawPillarBottom() {
     glMatrixMode(GL_MODELVIEW);
     glTranslatef(-pillarBottom.length / 2, 0, -pillarBottom.width / 2);
 
-    pillarBottom.setColor(ColorArr[0]);
-    pillarBottom.DrawWireframe();
-    if(!drawWireFrame)
-        pillarBottom.DrawColor();
+    if(!drawWireFrame) {
+        pillarBottom.setupMaterial(ColorArr[2]);
+        pillarBottom.Draw();
+    } else {
+        pillarBottom.setColor(ColorArr[2]);
+        pillarBottom.DrawWireframe();
+    }
+
 
     glPopMatrix();
 }
@@ -1419,10 +1521,15 @@ void drawPillarTop() {
     glMatrixMode(GL_MODELVIEW);
     glTranslatef(-pillarTop.length / 2, pillarBottom.height + pillarBody.height, -pillarTop.width / 2);
 
-    pillarTop.setColor(ColorArr[2]);
-    pillarTop.DrawWireframe();
-    if(!drawWireFrame)
-        pillarTop.DrawColor();
+    if(!drawWireFrame) {
+        // pillarTop.DrawColor();
+        pillarTop.setupMaterial(ColorArr[2]);
+        pillarTop.Draw();
+    } else {
+        pillarTop.setColor(ColorArr[2]);
+        pillarTop.DrawWireframe();
+    }
+
 
     glPopMatrix();
 }
@@ -1436,10 +1543,15 @@ void drawRotation() {
     glRotatef(90, 1, 0, 0);
     glTranslatef(0, -rotation.height / 2, 0);
 
-    rotation.setColor(ColorArr[3]);
-    rotation.DrawWireframe();
-    if(!drawWireFrame)
-        rotation.DrawColor();
+
+    if(!drawWireFrame) {
+        rotation.setupMaterial(ColorArr[0]);
+        rotation.Draw();
+    } else {
+        rotation.setColor(ColorArr[0]);
+        rotation.DrawWireframe();
+    }
+
 
     glPopMatrix();
 } 
@@ -1456,10 +1568,15 @@ void drawCrank() {
     glTranslatef(-crank.length / 2 + crank.width / 2, -crank.height / 2, 0);
     // glScalef(3,3,3);
 
-    crank.setColor(ColorArr[4]);
-    crank.DrawWireframe();
-    if(!drawWireFrame)
-        crank.DrawColor();
+
+    if(!drawWireFrame) {
+        crank.setupMaterial(ColorArr[9]);
+        crank.Draw();
+    } else {
+        crank.setColor(ColorArr[9]);
+        crank.DrawWireframe();
+    }
+
 
     glPopMatrix();
 }
@@ -1474,10 +1591,14 @@ void drawBearing() {
     glRotatef(90, 1, 0, 0);
     glRotatef(90, 0, 1, 0);
 
-    bearing.setColor(ColorArr[0]);
-    bearing.DrawWireframe();
-    if(!drawWireFrame)
-        bearing.DrawColor();
+    if(!drawWireFrame) {
+        bearing.setupMaterial(ColorArr[0]);
+        bearing.Draw();
+    } else {
+        bearing.setColor(ColorArr[0]);
+        bearing.DrawWireframe();
+    }
+
 
     glPopMatrix();
 
@@ -1490,10 +1611,13 @@ void drawBearing() {
     glRotatef(90, 1, 0, 0);
     glRotatef(90, 0, 1, 0);
 
-    bearing.setColor(ColorArr[0]);
-    bearing.DrawWireframe();
-    if(!drawWireFrame)
-        bearing.DrawColor();
+    if(!drawWireFrame) {
+        bearing.setupMaterial(ColorArr[0]);
+        bearing.Draw();
+    } else {
+        bearing.setColor(ColorArr[0]);
+        bearing.DrawWireframe();
+    }
 
     glPopMatrix();
 }
@@ -1505,12 +1629,17 @@ void drawThirdBolt() {
     glMatrixMode(GL_MODELVIEW);
     glTranslatef(0, pillarBottom.height + 0.1*pillarBody.height, pillarBody.width/2);
     glRotatef(90, 1, 0, 0);
-    glScalef(2,(rotation.height + crank.height + linkbar.height)/bolt.height,2);
+    glScalef(2,1.2*(rotation.height + crank.height + linkbar.height)/bolt.height,2);
 
-    bolt.setColor(ColorArr[7]);
-    bolt.DrawWireframe();
-    if(!drawWireFrame)
-        bolt.DrawColor();
+
+    if(!drawWireFrame) {
+        bolt.setupMaterial(ColorArr[7]);
+        bolt.Draw();
+    } else {
+        bolt.setColor(ColorArr[7]);
+        bolt.DrawWireframe();
+    }
+
 
     glPopMatrix();
 }
@@ -1525,10 +1654,14 @@ void drawSecondBolt() {
     glTranslated(-secondBoltPos * (crank.length - crank.width), 0, 0); // 0 -> crank.length - crank.width
     glRotatef(90, 1, 0, 0);
 
-    bolt.setColor(ColorArr[7]);
-    bolt.DrawWireframe();
-    if(!drawWireFrame)
-        bolt.DrawColor();
+    if(!drawWireFrame) {
+        bolt.setupMaterial(ColorArr[7]);
+        bolt.Draw();
+    } else {
+        bolt.setColor(ColorArr[7]);
+        bolt.DrawWireframe();
+    }
+
 
     glPopMatrix();
 }
@@ -1550,10 +1683,15 @@ void drawSecondNut() {
     glRotatef(-rotateAngle, 0, 0, 1); // rotate around origin: to keep nut not rotate after glRotatef(rotateAngle, 0, 0, 1);
     glRotatef(thirdBoltAngle, 0, 0, 1); // rotate around origin: to make edges parallel with (secondBolt, thirdBolt) line
 
-    nut.setColor(ColorArr[0]);
-    nut.DrawWireframe();
-    if(!drawWireFrame)
-        nut.DrawColor();
+
+    if(!drawWireFrame) {
+        nut.setupMaterial(ColorArr[0]);
+        nut.Draw();
+    } else {
+        nut.setColor(ColorArr[0]);
+        nut.DrawWireframe();
+    }
+
 
     glPopMatrix();
 }
@@ -1574,10 +1712,15 @@ void drawLinkBar() {
     glRotatef(-90, 0, 0, 1);
     glTranslatef(-linkbar.length/2 + linkbar.width/2, 0, 0);
 
-    linkbar.setColor(ColorArr[5]);
-    linkbar.DrawWireframe();
-    if(!drawWireFrame)
-        linkbar.DrawColor();
+
+    if(!drawWireFrame) {
+        linkbar.setupMaterial(ColorArr[1]);
+        linkbar.Draw();
+    } else {
+        linkbar.setColor(ColorArr[1]);
+        linkbar.DrawWireframe();
+    }
+
 
     glPopMatrix();
 }
@@ -1598,10 +1741,15 @@ void drawFirstBolt() {
     glRotatef(90, 1, 0, 0);
 
 
-    bolt.setColor(ColorArr[7]);
-    bolt.DrawWireframe();
-    if(!drawWireFrame)
-        bolt.DrawColor();
+
+    if(!drawWireFrame) {
+        bolt.setupMaterial(ColorArr[7]);
+        bolt.Draw();
+    } else {
+        bolt.setColor(ColorArr[7]);
+        bolt.DrawWireframe();
+    }
+
 
     glPopMatrix();
 }
@@ -1621,10 +1769,15 @@ void drawFirstNut() {
     glTranslatef(0, linkbar.length - linkbar.width, 0);
     glRotatef(-thirdBoltAngle, 0, 0, 1); // rotate around origin -> no rotate after glRotatef(thirdBoltAngle, 0, 0, 1);
 
-    nut.setColor(ColorArr[0]);
-    nut.DrawWireframe();
-    if(!drawWireFrame)
-        nut.DrawColor();
+
+    if(!drawWireFrame) {
+        nut.setupMaterial(ColorArr[0]);
+        nut.Draw();
+    } else {
+        nut.setColor(ColorArr[0]);
+        nut.DrawWireframe();
+    }
+
 
     glPopMatrix();
 }
@@ -1643,10 +1796,14 @@ void drawSlider() {
     glRotatef(90, 0, 0, 1);
     glTranslatef(0, -slider.height/2, 0);
 
-    slider.setColor(ColorArr[7]);
-    slider.DrawWireframe();
-    if(!drawWireFrame)
-        slider.DrawColor();
+    if(!drawWireFrame) {
+        slider.setupMaterial(ColorArr[6]);
+        slider.Draw();
+    } else {
+        slider.setColor(ColorArr[6]);
+        slider.DrawWireframe();
+    }
+
 
     glPopMatrix();
 }
@@ -1665,10 +1822,15 @@ void drawUBar() {
     glRotatef(180, 1, 0, 0);
     glTranslatef(0, 0, -ubar.width/2);
 
-    ubar.setColor(ColorArr[6]);
-    ubar.DrawWireframe();
-    if(!drawWireFrame)
-        ubar.DrawColor();
+
+    if(!drawWireFrame) {
+        ubar.setupMaterial(ColorArr[6]);
+        ubar.Draw();
+    } else {
+        ubar.setColor(ColorArr[6]);
+        ubar.DrawWireframe();
+    }
+
 
     glPopMatrix();
 }
@@ -1693,11 +1855,29 @@ void drawObjects() {
 float cameraAngle = -25;
 float cameraHeight = 4;
 float cameraDistance = 10;
+
+bool secondLightOn = false;
+
 void display() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(cameraDistance*sin(cameraAngle * PI / 180), cameraHeight, cameraDistance*cos(cameraAngle * PI / 180), 0, 0, 0, 0, 1, 0);
     //    gluLookAt(0, 0, 4, 0, 0, 0, 0, 1, 0);
+
+    if(secondLightOn) {
+        // set up first light source
+        glEnable(GL_LIGHT1); 
+        GLfloat	lightDiffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};
+        GLfloat	lightSpecular[] = {0.8f, 0.8f, 0.8f, 1.0f};
+        GLfloat	lightAmbient[] = {0.5f, 0.5f, 0.5f, 1.0f};
+        GLfloat light_position2[] = {-6.0f, 0.0f, 0.5f, 0.0f};
+        glLightfv(GL_LIGHT1, GL_POSITION, light_position2);
+        glLightfv(GL_LIGHT1, GL_DIFFUSE, lightDiffuse);
+        glLightfv(GL_LIGHT1, GL_AMBIENT, lightAmbient);
+        glLightfv(GL_LIGHT1, GL_SPECULAR, lightSpecular);
+    } else {
+        glDisable(GL_LIGHT1);
+    }
 
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1710,6 +1890,7 @@ void display() {
     glFlush();
     glutSwapBuffers();
 }
+
 
 void keyPressed(unsigned char key, int x, int y) {
     switch (key)
@@ -1740,12 +1921,17 @@ void keyPressed(unsigned char key, int x, int y) {
     case 'W':
         drawWireFrame = !drawWireFrame;
         break;
+    case 'd':
+        secondLightOn = !secondLightOn;
+        break;
+    case 'D':
+        secondLightOn = !secondLightOn;
+        break;
     default:
         break;
     }
     glutPostRedisplay();
 }
-
 
 void specialKeyPressed(int key, int x, int y) {
     switch (key)
@@ -1776,14 +1962,27 @@ void init()
     glClearColor(1, 1, 1, 1);
 
     glFrontFace(GL_CCW);
-    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST); // enable depth calculation
+    glEnable(GL_LIGHTING); // enable light mode
+
+    // set up first light source
+    glEnable(GL_LIGHT0); 
+    GLfloat	lightDiffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};
+	GLfloat	lightSpecular[] = {0.8f, 0.8f, 0.8f, 1.0f};
+	GLfloat	lightAmbient[] = {0.5f, 0.5f, 0.5f, 1.0f};
+	GLfloat light_position1[] = {6.0f, 3.0f, 6.0f, 0.0f};
+	glLightfv(GL_LIGHT0, GL_POSITION, light_position1);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpecular);
+
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     // glOrtho(-0.5*size, 0.5*size, -0.5*size, 0.5*size, -1000, 1000);
-    float x = 2;
-    // glFrustum(-x, x, -0.5*x, x, x, 20);
-    glFrustum(-1.0, 1.0, -1.0, 1.0, 1, 50.0);
+    // glFrustum(-1.0, 1.0, -1.0, 1.0, 1, 50.0);
+
+    gluPerspective(75, 1, 1, 50);
     
     
     
