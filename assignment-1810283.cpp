@@ -2025,12 +2025,13 @@ void drawPillarTop() {
     glPopMatrix();
 }
 
-// fixed
+int rotateAngle = 0; // 0: // -Ox -> rotate counter clockwise (Ox->Oy)
 void drawRotation() {
     glPushMatrix();
 
     glMatrixMode(GL_MODELVIEW);
     glTranslatef(0, pillarBottom.height + pillarBody.height / 2, rotation.height / 2 + pillarBody.width / 2);
+    glRotatef(rotateAngle, 0, 0, 1);
     glRotatef(90, 1, 0, 0);
     glTranslatef(0, -rotation.height / 2, 0);
 
@@ -2047,7 +2048,6 @@ void drawRotation() {
     glPopMatrix();
 } 
 
-int rotateAngle = 0; // 0: // -Ox -> rotate counter clockwise (Ox->Oy)
 void drawCrank() {
     glPushMatrix();
 
@@ -2467,14 +2467,21 @@ void display() {
     if(perspective) {
         // gluPerspective(75, 1, 1, 50);
         glFrustum(-1, 1, -0.5*SCREEN_HEIGHT/SCREEN_WIDTH, 1.5*SCREEN_HEIGHT/SCREEN_WIDTH, 1, 50.0);
+        
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        gluLookAt(cameraDistance*sin(cameraAngle * PI / 180), cameraHeight, cameraDistance*cos(cameraAngle * PI / 180), 0, 0, 0, 0, pillarBottom.height + pillarBody.height/2, 0);
     } else {
-        glOrtho(-5, 5, -2, 7, -1000, 1000);
+        glOrtho(-10, 10, -10*SCREEN_HEIGHT/SCREEN_WIDTH, 10*SCREEN_HEIGHT/SCREEN_WIDTH, -1000, 1000);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        // cameraDistance = 0;
+        gluLookAt(0, 20, 0, 0, 0, 0, 0, 0, 1);
     }
 
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    gluLookAt(cameraDistance*sin(cameraAngle * PI / 180), cameraHeight, cameraDistance*cos(cameraAngle * PI / 180), 0, 0, 0, 0, pillarBottom.height + pillarBody.height/2, 0);
+
     //    gluLookAt(0, 0, 6, 0, 0, 0, 0, 1, 0);
 
     if(secondLightOn) {
