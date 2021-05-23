@@ -2527,19 +2527,19 @@ void keyPressed(unsigned char key, int x, int y) {
     case '2':
         rotateAngle = (rotateAngle - 10) % 360; 
         break;
-    case '3':
+    case '4':
         secondBoltPos = secondBoltPos - 0.1;
         if(secondBoltPos < 0) secondBoltPos = 0; 
         break;
-    case '4':
+    case '3':
         secondBoltPos = secondBoltPos + 0.1;
         if(secondBoltPos > 1) secondBoltPos = 1; 
         break;
     case '+':
-        cameraDistance -= 0.1;
+        cameraDistance += 0.1;
         break;
     case '-':
-        cameraDistance += 0.1;
+        cameraDistance -= 0.1;
         break;
     case 'w':
         drawWireFrame = !drawWireFrame;
