@@ -2622,12 +2622,29 @@ void init()
     glLoadIdentity();
 }
 
+void printInstruction() {
+    cout << "1\t: Xoay ban xoay nguoc chieu kim dong ho\n";
+    cout << "2\t: Xoay ban xoay cung chieu kim dong ho\n";
+    cout << "3, 4\t: Dieu chinh vi tri cua chot 2\n";
+    cout << "W, w\t: Chuyen doi qua lai giua che do khung day la to mau\n";
+    cout << "V, v\t: Chuyen doi qua lai giua hai che do nhin khac nhau\n";
+    cout << "D, d\t: Bat/tat nguon sang thu hai\n";
+    cout << "+\t: Tang khoang cach camera\n";
+    cout << "-\t: Giam khoang cach camera\n";
+    cout << "up arrow\t: Tang chieu cao camera\n";
+    cout << "down arrow\t: Giam chieu cao camera\n";
+    cout << "<-\t: Quay camera theo chieu kim dong ho\n";
+    cout << "->\t: Quay camera nguoc chieu kim dong ho\n";
+}
+
 int main(int argc, char** argv) {
     glutInit(&argc, argv); //initialize the tool kit
     glutInitDisplayMode(GLUT_DOUBLE |GLUT_RGB | GLUT_DEPTH);//set the display mode
     glutInitWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT); //set window size
     glutInitWindowPosition(100, 100); // set window position on screen
-    glutCreateWindow("Assignment"); // open the screen window
+    glutCreateWindow("Bui Ngo Hoang Long - 1810283"); // open the screen window
+
+    printInstruction();
 
     init();
 
