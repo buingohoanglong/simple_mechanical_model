@@ -32,10 +32,10 @@ public:
 const int COLORNUM = 14;
 
 Color ColorArr[COLORNUM] = {
-    Color(1.0, 0.0, 0.0), // red
-    Color(0.0, 1.0, 0.0), // green
-    Color(0.0,  0.0, 1.0),// blue
-    Color(1.0, 1.0,  0.0),// 
+    Color(1.0, 0.0, 0.0), 
+    Color(0.0, 1.0, 0.0),
+    Color(0.0,  0.0, 1.0),
+    Color(1.0, 1.0,  0.0),
     Color(1.0, 0.0, 1.0),
     Color(0.0, 1.0, 1.0),
     Color(0.3, 0.3, 0.3),
@@ -282,6 +282,60 @@ public:
     }
 
     virtual void init() = 0;
+};
+
+class Tile: public Mesh {
+public:
+    Color firstColor = Color(0,0,0);
+    Color secondColor = Color(0,0,0);
+	// GLfloat ambient1[4] = {0.2, 0.2, 0.2, 1.0};
+	// GLfloat diffuse1[4] = {0.8, 0.8, 0.8, 1.0};
+	// GLfloat specular1[4] = {1.0, 1.0, 1.0, 1.0};
+	// GLfloat ambient2[4] = {0.2, 0.2, 0.2, 1.0};
+	// GLfloat diffuse2[4] = {0.8, 0.8, 0.8, 1.0};
+	// GLfloat specular2[4] = {1.0, 1.0, 1.0, 1.0};
+	// GLfloat shiness = 50.0f;
+    Tile(): Mesh() {}
+    ~Tile() {}
+
+    void setupFirstColor(Color color) {
+       firstColor = color;
+    }
+
+    void setupSecondColor(Color color) {
+        secondColor = color;
+    }
+
+    void DrawColor() {
+        glDisable(GL_LIGHTING);
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glColor3f(secondColor.red, secondColor.green, secondColor.blue);
+        for (int f = 0; f < numFaces - 1; f++)
+        {
+            glBegin(GL_POLYGON);
+            for (int v = 0; v < face[f].nVerts; v++)
+            {
+                int	iv = face[f].vert[v].vertIndex;
+                // int	ic = face[f].vert[v].colorIndex; 
+                glVertex3f(pt[iv].x, pt[iv].y, pt[iv].z);
+            }
+            glEnd();
+        }
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glColor3f(firstColor.red, firstColor.green, firstColor.blue);
+        glBegin(GL_POLYGON);
+        for (int v = 0; v < face[numFaces-1].nVerts; v++)
+        {
+            int	iv = face[numFaces-1].vert[v].vertIndex;
+            // int	ic = face[f].vert[v].colorIndex; 
+            glVertex3f(pt[iv].x, pt[iv].y, pt[iv].z);
+        }
+        glEnd();
+
+        glEnable(GL_LIGHTING);
+    }
 };
 
 class RectangularPrism : public Mesh {
@@ -1360,6 +1414,346 @@ public:
     }
 };
 
+class FirstTile: public Tile {
+public:
+    float size;
+    int nSegments;
+    FirstTile(float size, int nSegments): Tile(), size(size), nSegments(nSegments) {}
+    ~FirstTile() {}
+
+    virtual void init() {
+        float radius = 0.6*size;
+        float innerradius = 0.7*radius;
+        // init vertices
+        numVerts = 4 + 8*(nSegments+1);
+        pt = new Point3f[numVerts];
+
+        // square vertices
+        pt[numVerts - 1].set(-size/2, size/2, 0);
+        pt[numVerts - 2].set(size/2, size/2, 0);
+        pt[numVerts - 3].set(size/2, -size/2, 0);
+        pt[numVerts - 4].set(-size/2, -size/2, 0);
+
+        // circular vertices
+        float angle = 0;
+        float deltaAngle = PI / (2*nSegments);
+        for(int i=0; i<nSegments+1; i++) {
+            //front
+            // bottom left vertices
+            // inner circle
+            pt[i].set(-size/2 + innerradius*cos(angle), -size/2 + innerradius*sin(angle), 0.001);
+            //outer circle
+            pt[i + nSegments+1].set(-size/2 + radius*cos(angle), -size/2 + radius*sin(angle), 0.001);
+
+            // top right vertices
+            // inner circle
+            pt[i + 2*(nSegments+1)].set(size/2 - innerradius*cos(angle), size/2 - innerradius*sin(angle), 0.001);
+            //outer circle
+            pt[i + 3*(nSegments+1)].set(size/2 - radius*cos(angle), size/2 - radius*sin(angle), 0.001);
+
+            // back
+            // bottom left vertices
+            // inner circle
+            pt[i + 4*(nSegments+1)].set(-size/2 + innerradius*cos(angle), -size/2 + innerradius*sin(angle), -0.001);
+            //outer circle
+            pt[i + 5*(nSegments+1)].set(-size/2 + radius*cos(angle), -size/2 + radius*sin(angle), -0.001);
+
+            // top right vertices
+            // inner circle
+            pt[i + 6*(nSegments+1)].set(size/2 - innerradius*cos(angle), size/2 - innerradius*sin(angle), -0.001);
+            //outer circle
+            pt[i + 7*(nSegments+1)].set(size/2 - radius*cos(angle), size/2 - radius*sin(angle), -0.001);
+
+            angle += deltaAngle;
+        }
+
+
+        // init faces
+        numFaces = 1 + 4*nSegments;
+        face = new Face[numFaces];
+
+        // square face
+        face[numFaces - 1].nVerts = 4;
+        face[numFaces - 1].vert = new VertexID[face[numFaces - 1].nVerts];
+        face[numFaces - 1].vert[0].vertIndex = numVerts - 1;
+        face[numFaces - 1].vert[1].vertIndex = numVerts - 2;
+        face[numFaces - 1].vert[2].vertIndex = numVerts - 3;
+        face[numFaces - 1].vert[3].vertIndex = numVerts - 4;
+
+        // circular faces
+        for(int i=0; i<nSegments; i++) {
+            // front
+            // bottom left
+            face[i].nVerts = 4;
+            face[i].vert = new VertexID[face[i].nVerts];
+            face[i].vert[0].vertIndex = i;
+            face[i].vert[1].vertIndex = i+1;
+            face[i].vert[2].vertIndex = i+1 + nSegments+1;
+            face[i].vert[3].vertIndex = i + nSegments+1;
+
+            // top right
+            face[i + nSegments].nVerts = 4;
+            face[i + nSegments].vert = new VertexID[face[i + nSegments].nVerts];
+            face[i + nSegments].vert[0].vertIndex = i + 3*(nSegments+1);
+            face[i + nSegments].vert[1].vertIndex = i + 2*(nSegments+1);
+            face[i + nSegments].vert[2].vertIndex = i+1 + 2*(nSegments+1);
+            face[i + nSegments].vert[3].vertIndex = i+1 + 3*(nSegments+1);
+
+            // back
+            // bottom left
+            face[i + 2*nSegments].nVerts = 4;
+            face[i + 2*nSegments].vert = new VertexID[face[i + 2*nSegments].nVerts];
+            face[i + 2*nSegments].vert[0].vertIndex = i + 4*(nSegments+1);
+            face[i + 2*nSegments].vert[1].vertIndex = i + 5*(nSegments+1);
+            face[i + 2*nSegments].vert[2].vertIndex = i+1 + 5*(nSegments+1);
+            face[i + 2*nSegments].vert[3].vertIndex = i+1 + 4*(nSegments+1);
+
+            // top right
+            face[i + 3*nSegments].nVerts = 4;
+            face[i + 3*nSegments].vert = new VertexID[face[i + 3*nSegments].nVerts];
+            face[i + 3*nSegments].vert[0].vertIndex = i + 6*(nSegments+1);
+            face[i + 3*nSegments].vert[1].vertIndex = i + 7*(nSegments+1);
+            face[i + 3*nSegments].vert[2].vertIndex = i+1 + 7*(nSegments+1);
+            face[i + 3*nSegments].vert[3].vertIndex = i+1 + 6*(nSegments+1);
+        }
+    }
+
+};
+
+class SecondTile: public Tile {
+public:
+    float size;
+    SecondTile(float size): Tile(), size(size) {}
+    ~SecondTile() {}
+
+    virtual void init() {
+        float patternSize = size/5;
+        // init vertices
+        numVerts = 16;
+        pt = new Point3f[numVerts];
+        pt[0].set(-size/2, size/2, 0);
+        pt[1].set(size/2, size/2, 0);
+        pt[2].set(-size/2, -size/2, 0);
+        pt[3].set(size/2, -size/2, 0);
+        pt[4].set(-patternSize/2, size/2, 0);
+        pt[5].set(patternSize/2, size/2, 0);
+        pt[6].set(size/2, patternSize/2, 0);
+        pt[7].set(size/2, -patternSize/2, 0);
+        pt[8].set(patternSize/2, -size/2, 0);
+        pt[9].set(-patternSize/2, -size/2, 0);
+        pt[10].set(-size/2, -patternSize/2, 0);
+        pt[11].set(-size/2, patternSize/2, 0);
+        pt[12].set(-patternSize/2, patternSize/2, 0);
+        pt[13].set(patternSize/2, patternSize/2, 0);
+        pt[14].set(patternSize/2, -patternSize/2, 0);
+        pt[15].set(-patternSize/2, -patternSize/2, 0);
+
+        // init faces
+        numFaces = 6;
+        face = new Face[numFaces];
+
+        // top left
+        face[0].nVerts = 4;
+        face[0].vert = new VertexID[face[0].nVerts];
+        face[0].vert[0].vertIndex = 0;
+        face[0].vert[1].vertIndex = 4;
+        face[0].vert[2].vertIndex = 12;
+        face[0].vert[3].vertIndex = 11;
+
+        // top right
+        face[1].nVerts = 4;
+        face[1].vert = new VertexID[face[1].nVerts];
+        face[1].vert[0].vertIndex = 5;
+        face[1].vert[1].vertIndex = 1;
+        face[1].vert[2].vertIndex = 6;
+        face[1].vert[3].vertIndex = 13;
+
+        // bottom left
+        face[2].nVerts = 4;
+        face[2].vert = new VertexID[face[2].nVerts];
+        face[2].vert[0].vertIndex = 2;
+        face[2].vert[1].vertIndex = 10;
+        face[2].vert[2].vertIndex = 15;
+        face[2].vert[3].vertIndex = 9;
+
+        // bottom right
+        face[3].nVerts = 4;
+        face[3].vert = new VertexID[face[3].nVerts];
+        face[3].vert[0].vertIndex = 8;
+        face[3].vert[1].vertIndex = 14;
+        face[3].vert[2].vertIndex = 7;
+        face[3].vert[3].vertIndex = 3;
+
+        // vertical
+        face[4].nVerts = 4;
+        face[4].vert = new VertexID[face[4].nVerts];
+        face[4].vert[0].vertIndex = 4;
+        face[4].vert[1].vertIndex = 5;
+        face[4].vert[2].vertIndex = 8;
+        face[4].vert[3].vertIndex = 9;
+
+        // horizontal
+        face[5].nVerts = 4;
+        face[5].vert = new VertexID[face[5].nVerts];
+        face[5].vert[0].vertIndex = 11;
+        face[5].vert[1].vertIndex = 6;
+        face[5].vert[2].vertIndex = 7;
+        face[5].vert[3].vertIndex = 10;
+    }
+
+    void DrawColor() {
+        glDisable(GL_LIGHTING);
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        for (int f = 0; f < numFaces; f++)
+        {
+            if (f == numFaces-1 || f == numFaces-2) {
+                glColor3f(secondColor.red, secondColor.green, secondColor.blue);
+            } else {
+                glColor3f(firstColor.red, firstColor.green, firstColor.blue);
+            }
+            
+            glBegin(GL_POLYGON);
+            for (int v = 0; v < face[f].nVerts; v++)
+            {
+                int	iv = face[f].vert[v].vertIndex;
+                // int	ic = face[f].vert[v].colorIndex; 
+                glVertex3f(pt[iv].x, pt[iv].y, pt[iv].z);
+            }
+            glEnd();
+        }
+
+        glEnable(GL_LIGHTING);
+    }
+};
+
+class ThirdTile: public Tile {
+public:
+    float size;
+    int nSegments;
+    ThirdTile(float size, int nSegments): Tile(), size(size), nSegments(nSegments) {}
+    ~ThirdTile() {}
+
+    virtual void init() {
+        float radius = 0.8*size/2;
+        float patternSize = size/5;
+        float innerradius = radius - patternSize;
+        // init vertices
+        numVerts = 4 + 2*(8 + 2*nSegments);
+        pt = new Point3f[numVerts];
+
+        // square
+        pt[numVerts-1].set(-size/2, size/2, 0);
+        pt[numVerts-2].set(size/2, size/2, 0);
+        pt[numVerts-3].set(size/2, -size/2, 0);
+        pt[numVerts-4].set(-size/2, -size/2, 0);
+
+        // vertical
+        // front
+        pt[numVerts - 5].set(-patternSize/2, size/2, 0.001);
+        pt[numVerts - 6].set(patternSize/2, size/2, 0.001);
+        pt[numVerts - 7].set(patternSize/2, -size/2, 0.001);
+        pt[numVerts - 8].set(-patternSize/2, -size/2, 0.001);
+        // back
+        pt[numVerts - 13].set(-patternSize/2, size/2, -0.001);
+        pt[numVerts - 14].set(patternSize/2, size/2, -0.001);
+        pt[numVerts - 15].set(patternSize/2, -size/2, -0.001);
+        pt[numVerts - 16].set(-patternSize/2, -size/2, -0.001);
+
+        // horizontal
+        // front
+        pt[numVerts - 9].set(-size/2, patternSize/2, 0.001);
+        pt[numVerts - 10].set(-size/2, -patternSize/2, 0.001);
+        pt[numVerts - 11].set(size/2, patternSize/2, 0.001);
+        pt[numVerts - 12].set(size/2, -patternSize/2, 0.001);
+        // back
+        pt[numVerts - 17].set(-size/2, patternSize/2, -0.001);
+        pt[numVerts - 18].set(-size/2, -patternSize/2, -0.001);
+        pt[numVerts - 19].set(size/2, patternSize/2, -0.001);
+        pt[numVerts - 20].set(size/2, -patternSize/2, -0.001);
+
+        // circular faces
+        float angle = 0;
+        float deltaAngle = 2*PI / nSegments;
+        for(int i=0; i<nSegments; i++) {
+            // outer
+            // front
+            pt[i].set(radius*cos(angle), radius*sin(angle), 0.001);
+            // back
+            pt[i + nSegments].set(radius*cos(angle), radius*sin(angle), -0.001);
+            
+            // inner
+            // front
+            pt[i + 2*nSegments].set(innerradius*cos(angle), innerradius*sin(angle), 0.001);
+            // back
+            pt[i + 3*nSegments].set(innerradius*cos(angle), innerradius*sin(angle), -0.001);
+            angle += deltaAngle;
+        }
+
+
+        // init faces
+        numFaces = 1 + 2*(2+nSegments);
+        face = new Face[numFaces];
+
+        // square
+        face[numFaces - 1].nVerts = 4;
+        face[numFaces - 1].vert = new VertexID[face[numFaces - 1].nVerts];
+        face[numFaces - 1].vert[0].vertIndex = numVerts - 1;
+        face[numFaces - 1].vert[1].vertIndex = numVerts - 2;
+        face[numFaces - 1].vert[2].vertIndex = numVerts - 3;
+        face[numFaces - 1].vert[3].vertIndex = numVerts - 4;
+
+        // vertical
+        // front
+        face[numFaces - 2].nVerts = 4;
+        face[numFaces - 2].vert = new VertexID[face[numFaces - 2].nVerts];
+        face[numFaces - 2].vert[0].vertIndex = numVerts - 5;
+        face[numFaces - 2].vert[1].vertIndex = numVerts - 6;
+        face[numFaces - 2].vert[2].vertIndex = numVerts - 7;
+        face[numFaces - 2].vert[3].vertIndex = numVerts - 8;
+        // back
+        face[numFaces - 3].nVerts = 4;
+        face[numFaces - 3].vert = new VertexID[face[numFaces - 3].nVerts];
+        face[numFaces - 3].vert[0].vertIndex = numVerts - 14;
+        face[numFaces - 3].vert[1].vertIndex = numVerts - 13;
+        face[numFaces - 3].vert[2].vertIndex = numVerts - 16;
+        face[numFaces - 3].vert[3].vertIndex = numVerts - 15;
+
+        // horizontal
+        // front
+        face[numFaces - 4].nVerts = 4;
+        face[numFaces - 4].vert = new VertexID[face[numFaces - 4].nVerts];
+        face[numFaces - 4].vert[0].vertIndex = numVerts - 9;
+        face[numFaces - 4].vert[1].vertIndex = numVerts - 11;
+        face[numFaces - 4].vert[2].vertIndex = numVerts - 12;
+        face[numFaces - 4].vert[3].vertIndex = numVerts - 10;
+        // back
+        face[numFaces - 5].nVerts = 4;
+        face[numFaces - 5].vert = new VertexID[face[numFaces - 5].nVerts];
+        face[numFaces - 5].vert[0].vertIndex = numVerts - 17;
+        face[numFaces - 5].vert[1].vertIndex = numVerts - 18;
+        face[numFaces - 5].vert[2].vertIndex = numVerts - 20;
+        face[numFaces - 5].vert[3].vertIndex = numVerts - 19;
+
+        // circular faces
+        for(int i=0; i<nSegments; i++) {
+            // front
+            face[i].nVerts = 4;
+            face[i].vert = new VertexID[face[i].nVerts];
+            face[i].vert[0].vertIndex = i % nSegments;
+            face[i].vert[1].vertIndex = i % nSegments + 2*nSegments;
+            face[i].vert[2].vertIndex = (i+1) % nSegments + 2*nSegments;
+            face[i].vert[3].vertIndex = (i+1) % nSegments;
+            // back
+            face[i + nSegments].nVerts = 4;
+            face[i + nSegments].vert = new VertexID[face[i + nSegments].nVerts];
+            face[i + nSegments].vert[0].vertIndex = i % nSegments + nSegments;
+            face[i + nSegments].vert[1].vertIndex = (i+1) % nSegments + nSegments;
+            face[i + nSegments].vert[2].vertIndex = (i+1) % nSegments + 3*nSegments;
+            face[i + nSegments].vert[3].vertIndex = i % nSegments + 3*nSegments;
+        }
+    }
+};
 
 void drawCoordinateSystem() {
     // x axis
@@ -1459,6 +1853,20 @@ float boltHeight = nutHeight;
 float boltSegments = 100;
 Cylinder bolt = Cylinder(boltRadius, boltHeight, boltSegments);
 
+// first tile
+float firstTileSize = 1.0;
+int firstTileSegments = 25;
+FirstTile firstTile = FirstTile(firstTileSize, firstTileSegments);
+
+// second tile
+float secondTileSize = firstTileSize;
+SecondTile secondTile = SecondTile(secondTileSize);
+
+// third tile
+float thirdTileSize = 1.0;
+int thirdTileSegments = 25;
+ThirdTile thirdTile = ThirdTile(thirdTileSize, thirdTileSegments);
+
 void initObjects() {
     pillarBody.init();
     pillarBottom.init();
@@ -1471,6 +1879,10 @@ void initObjects() {
     nut.init();
     linkbar.init();
     bolt.init();
+
+    firstTile.init();
+    secondTile.init();
+    thirdTile.init();
 }
 
 bool drawWireFrame = false;
@@ -1835,21 +2247,66 @@ void drawUBar() {
     glPopMatrix();
 }
 
+void drawFirstTile() {
+    glPushMatrix();
+
+    glMatrixMode(GL_MODELVIEW);
+    // glScalef(5,5,5);
+
+    firstTile.setupFirstColor(ColorArr[11]);
+    firstTile.setupSecondColor(ColorArr[7]);
+    // firstTile.DrawWireframe();
+    firstTile.DrawColor();
+    
+    glPopMatrix();
+}
+
+void drawSecondTile() {
+    glPushMatrix();
+
+    glMatrixMode(GL_MODELVIEW);
+    // glScalef(5,5,5);
+
+    secondTile.setupFirstColor(ColorArr[11]);
+    secondTile.setupSecondColor(ColorArr[7]);
+    // secondTile.DrawWireframe();
+    secondTile.DrawColor();
+
+    glPopMatrix();
+}
+
+void drawThirdTile() {
+    glPushMatrix();
+
+    glMatrixMode(GL_MODELVIEW);
+    glScalef(5,5,5);
+
+    thirdTile.setupFirstColor(ColorArr[11]);
+    thirdTile.setupSecondColor(ColorArr[7]);
+    thirdTile.DrawColor();
+
+    glPopMatrix();
+}
+
 void drawObjects() {
-    drawPillarBody();
-    drawPillarBottom();
-    drawPillarTop();
-    drawRotation();
-    drawCrank();
-    drawBearing();
-    drawSlider();
-    drawUBar();
-    drawThirdBolt();
-    drawSecondBolt();
-    drawSecondNut();
-    drawLinkBar();
-    drawFirstBolt();
-    drawFirstNut();
+    // drawPillarBody();
+    // drawPillarBottom();
+    // drawPillarTop();
+    // drawRotation();
+    // drawCrank();
+    // drawBearing();
+    // drawSlider();
+    // drawUBar();
+    // drawThirdBolt();
+    // drawSecondBolt();
+    // drawSecondNut();
+    // drawLinkBar();
+    // drawFirstBolt();
+    // drawFirstNut();
+
+    // drawFirstTile();
+    // drawSecondTile();
+    drawThirdTile();
 }
 
 float cameraAngle = -25;
@@ -1857,12 +2314,22 @@ float cameraHeight = 4;
 float cameraDistance = 10;
 
 bool secondLightOn = false;
+bool perspective = true;
 
 void display() {
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    if(perspective) {
+        gluPerspective(75, 1, 1, 50);
+    } else {
+        glOrtho(-5, 5, -5, 5, -1000, 1000);
+    }
+
+
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(cameraDistance*sin(cameraAngle * PI / 180), cameraHeight, cameraDistance*cos(cameraAngle * PI / 180), 0, 0, 0, 0, 1, 0);
-    //    gluLookAt(0, 0, 4, 0, 0, 0, 0, 1, 0);
+    //    gluLookAt(0, 0, 6, 0, 0, 0, 0, 1, 0);
 
     if(secondLightOn) {
         // set up first light source
@@ -1926,6 +2393,12 @@ void keyPressed(unsigned char key, int x, int y) {
         break;
     case 'D':
         secondLightOn = !secondLightOn;
+        break;
+    case 'v':
+        perspective = !perspective;
+        break;
+    case 'V':
+        perspective = !perspective;
         break;
     default:
         break;
